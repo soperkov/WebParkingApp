@@ -1,0 +1,18 @@
+﻿@page "/ZagrebParking"
+
+@rendermode InteractiveServer
+@using WebParkingApp.Models
+@using WebParkingApp.Services
+
+<header>
+    <h1>ZagrebParking</h1>
+    <div class="user_info">
+        <label>@LoggedInUser.User.Username</label>
+        <label>@LoggedInUser.User.PlateNumber</label>
+    </div>
+</header>
+
+@code {
+    [Inject] private NavigationManager NavManager { get; set; }
+    [Inject] private LoggedInUserModel LoggedInUser { get; set; }
+}
