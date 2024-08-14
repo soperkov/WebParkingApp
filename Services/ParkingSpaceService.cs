@@ -52,15 +52,21 @@ namespace WebParkingApp.Services
         {
             List<ParkingSpaceModel> availableSpaces = GetParkingSpaces();
 
-            //foreach(var reservation in _context.Reservations)
-            //{
-            //    if (sDate >= DateTime.Now && (sDate < reservation.StartDate 
-            //        && eDate <= reservation.StartDate || eDate > reservation.EndDate 
-            //        && sDate >= reservation.EndDate   || sDate > reservation.EndDate))
-            //    {
-            //        availableSpaces.Add(reservation);
-            //    }
-            //}
+            foreach (var reservation in _context.Reservations)
+            {
+                if(sDate < reservation.EndDate &&
+                    eDate > reservation.StartDate ||
+                    sDate < DateTime.Now)
+                {
+                    var parkingSpace = availableSpaces.FirstOrDefault(s => s.Id == reservation.ParkingId);
+
+                    if (parkingSpace != null)
+                    {
+                        availableSpaces.Remove(parkingSpace);
+                    }
+                }
+            }
+
             return availableSpaces;
         }
 

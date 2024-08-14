@@ -209,54 +209,6 @@
         StateHasChanged();
     }
 
-    // private void PopulateZones(List<ReservationModel> models)
-    // {
-    //     zone1Buttons = builder =>
-    //     {
-    //         int seq = 0;
-    //         foreach (var model in models)
-    //         {
-    //             if (ParkingSpaceService.GetReservationZone(model) == "1")
-    //             {
-    //                 builder.OpenElement(seq++, "button");
-    //                 builder.AddContent(seq++, model.ParkingId);
-    //                 builder.CloseElement();
-    //             }
-    //         }
-    //     };
-
-    //     zone2Buttons = builder =>
-    //     {
-    //         int seq = 0;
-    //         foreach (var model in models)
-    //         {
-    //             if (ParkingSpaceService.GetReservationZone(model) == "2")
-    //             {
-    //                 builder.OpenElement(seq++, "button");
-    //                 builder.AddContent(seq++, model.ParkingId);
-    //                 builder.CloseElement();
-    //             }
-    //         }
-    //     };
-
-    //     zone3Buttons = builder =>
-    //     {
-    //         int seq = 0;
-    //         foreach (var model in models)
-    //         {
-    //             if (ParkingSpaceService.GetReservationZone(model) == "3")
-    //             {
-    //                 builder.OpenElement(seq++, "button");
-    //                 builder.AddContent(seq++, model.ParkingId);
-    //                 builder.CloseElement();
-    //             }
-    //         }
-    //     };
-
-    //     // Trigger re-render
-    //     StateHasChanged();
-    // }
-
     private void PopulateZones(List<ParkingSpaceModel> models)
     {
         zone1Buttons = builder =>
