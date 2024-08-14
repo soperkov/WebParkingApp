@@ -1,18 +1,322 @@
 ﻿@page "/ZagrebParking"
 
 @rendermode InteractiveServer
+@using System.ComponentModel.DataAnnotations
 @using WebParkingApp.Models
 @using WebParkingApp.Services
 
+<style>
+    body {
+        background-color: #34c0eb;
+        height: 100vh;
+        width: 100vw;
+        display: flex;
+        flex-direction: column;
+        text-align: center;
+        overflow-x: hidden;
+    }
+
+    header {
+        display:flex;
+        background-color: #f0eee4;
+        justify-content:center;
+        vertical-align: middle;
+        border-radius: 0 0 20px 20px;
+        color: rgba(1.9, 1.9, 1.9, 0.5);
+        padding: 10px;
+        height: 20%;
+    }
+
+    .title {
+        flex: 9;
+        align-content: center;
+    }
+
+    h1 {
+        font-size: 72px;
+    }
+
+    .user_info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: right;
+    }
+
+    .body {
+        padding: 10px;
+    }
+
+    .form {
+        padding: 20px;
+        font-size: 18px; 
+    }
+
+    .valid.modified:not([type=checkbox]) {
+        outline: 1px solid #26b050;
+    }
+
+    .invalid {
+        outline: 1px solid red;
+    }
+
+    .validation-message {
+        color: red;
+    }
+
+    .zones {
+        display: flex;
+        justify-content: center;
+    }
+
+    .button_zone {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .button_zone > button {
+        color: rgba(1.9, 255, 255, 0.6);
+        font-size: 9px;
+        width: 55%;
+        height: 60px;
+        border-radius: 5px;
+        font-size: xx-large;
+            background-color: #20414f;
+    }
+
+    .zone_1, .zone_2, .zone_3 {
+        display: flex;
+        flex-direction: column;
+        flex: 1;
+        font-size: larger;
+        font-weight: bold;
+    }
+
+    .zone_2 {
+        border-left: 5px solid;
+        border-right: 5px solid;
+        border-color: white;
+    }
+
+</style>
+
 <header>
-    <h1>ZagrebParking</h1>
+    <div class="title">
+        <h1>ZagrebParking</h1>
+    </div>
     <div class="user_info">
         <label>@LoggedInUser.User.Username</label>
         <label>@LoggedInUser.User.PlateNumber</label>
     </div>
 </header>
+<div class="body">
+    <div class="form">
+        <EditForm EditContext="@editContext" OnValidSubmit="HandleValidSubmit" novalidate>
+            <DataAnnotationsValidator />
+
+            <div class="form-group row mb-3">
+                <label class="col-md-2 col-form-label">Datum početka rezervacije: <span class="text-danger">*</span></label>
+                <div class="col-md-10">
+                    <DateInput TValue="DateOnly?" class="form-control" @bind-Value="reservationForm.StartDate" />
+                    <ValidationMessage For="@(() => reservationForm.StartDate)" />
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label class="col-md-2 col-form-label">Vrijeme početka rezervacije: <span class="text-danger">*</span></label>
+                <div class="col-md-10">
+                    <TimeInput TValue="TimeOnly?" @bind-Value="reservationForm.StartTime" />
+                    <ValidationMessage For="@(() => reservationForm.StartTime)" />
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label class="col-md-2 col-form-label">Datum kraja rezervacije: <span class="text-danger">*</span></label>
+                <div class="col-md-10">
+                    <DateInput TValue="DateOnly?" class="form-control" @bind-Value="reservationForm.EndDate" />
+                    <ValidationMessage For="@(() => reservationForm.EndDate)" />
+                </div>
+            </div>
+
+            <div class="form-group row mb-3">
+                <label class="col-md-2 col-form-label">Vrijeme kraja rezervacije: <span class="text-danger">*</span></label>
+                <div class="col-md-10">
+                    <TimeInput TValue="TimeOnly?" @bind-Value="reservationForm.EndTime" />
+                    <ValidationMessage For="@(() => reservationForm.EndTime)" />
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12 text-right">
+                    <Button Type="ButtonType.Button" Color="ButtonColor.Secondary" Class="float-end" @onclick="ResetForm">Poništi</Button>
+                    <Button Type="ButtonType.Submit" Color="ButtonColor.Success" Class="float-end me-2" @onclick="HandleValidSubmit">Pretraži</Button>
+                </div>
+            </div>
+        </EditForm>
+    </div>
+    <div class="zones">
+        <div class="zone_1">
+            <label>Zona 1</label>
+            <div class="button_zone">
+                @zone1Buttons
+            </div>
+        </div>
+        <div class="zone_2">
+            <label>Zona 2</label>
+            <div class="button_zone">
+                @zone2Buttons
+            </div>
+        </div>
+        <div class="zone_3">
+            <label>Zona 3</label>
+            <div class="button_zone">
+                @zone3Buttons
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     [Inject] private NavigationManager NavManager { get; set; }
     [Inject] private LoggedInUserModel LoggedInUser { get; set; }
+    [Inject] private UserService UserService { get; set; }
+    [Inject] private ParkingSpaceService ParkingSpaceService { get; set; }
+
+    private ReservationFormModel reservationForm = new();
+    private RenderFragment zone1Buttons;
+    private RenderFragment zone2Buttons;
+    private RenderFragment zone3Buttons;
+    private EditContext? editContext;
+
+    protected override void OnInitialized()
+    {
+        editContext = new EditContext(reservationForm);
+        base.OnInitialized();
+    }
+
+    public void HandleValidSubmit()
+    {
+        var startDate = DateAndTimeToDateTime((DateOnly)reservationForm.StartDate,
+        (TimeOnly)reservationForm.StartTime);
+        var endDate = DateAndTimeToDateTime((DateOnly)reservationForm.EndDate, 
+        (TimeOnly)reservationForm.EndTime);
+
+        var availableSpaces = ParkingSpaceService.GetAvailableSpaces(startDate, endDate);
+
+        PopulateZones(availableSpaces);
+        StateHasChanged();
+    }
+
+    // private void PopulateZones(List<ReservationModel> models)
+    // {
+    //     zone1Buttons = builder =>
+    //     {
+    //         int seq = 0;
+    //         foreach (var model in models)
+    //         {
+    //             if (ParkingSpaceService.GetReservationZone(model) == "1")
+    //             {
+    //                 builder.OpenElement(seq++, "button");
+    //                 builder.AddContent(seq++, model.ParkingId);
+    //                 builder.CloseElement();
+    //             }
+    //         }
+    //     };
+
+    //     zone2Buttons = builder =>
+    //     {
+    //         int seq = 0;
+    //         foreach (var model in models)
+    //         {
+    //             if (ParkingSpaceService.GetReservationZone(model) == "2")
+    //             {
+    //                 builder.OpenElement(seq++, "button");
+    //                 builder.AddContent(seq++, model.ParkingId);
+    //                 builder.CloseElement();
+    //             }
+    //         }
+    //     };
+
+    //     zone3Buttons = builder =>
+    //     {
+    //         int seq = 0;
+    //         foreach (var model in models)
+    //         {
+    //             if (ParkingSpaceService.GetReservationZone(model) == "3")
+    //             {
+    //                 builder.OpenElement(seq++, "button");
+    //                 builder.AddContent(seq++, model.ParkingId);
+    //                 builder.CloseElement();
+    //             }
+    //         }
+    //     };
+
+    //     // Trigger re-render
+    //     StateHasChanged();
+    // }
+
+    private void PopulateZones(List<ParkingSpaceModel> models)
+    {
+        zone1Buttons = builder =>
+        {
+            int seq = 0;
+            foreach (var model in models)
+            {
+                if (model.ParkingName == "1")
+                {
+                    builder.OpenElement(seq++, "button");
+                    builder.AddContent(seq++, model.Id);
+                    builder.CloseElement();
+                }
+            }
+        };
+
+        zone2Buttons = builder =>
+        {
+            int seq = 0;
+            foreach (var model in models)
+            {
+                if (model.ParkingName == "2")
+                {
+                    builder.OpenElement(seq++, "button");
+                    builder.AddContent(seq++, model.Id);
+                    builder.CloseElement();
+                }
+            }
+        };
+
+        zone3Buttons = builder =>
+        {
+            int seq = 0;
+            foreach (var model in models)
+            {
+                if (model.ParkingName == "3")
+                {
+                    builder.OpenElement(seq++, "button");
+                    builder.AddContent(seq++, model.Id);
+                    builder.CloseElement();
+                }
+            }
+        };
+
+        // Trigger re-render
+        StateHasChanged();
+    }
+
+    private void ResetForm()
+    {
+        reservationForm = new();
+        editContext = new EditContext(reservationForm);
+        zone1Buttons = null;
+        zone2Buttons = null;
+        zone3Buttons = null;
+    }
+
+    private DateTime DateAndTimeToDateTime (DateOnly date, TimeOnly time)
+    {
+        return new DateTime(date, time);
+    }
+
 }

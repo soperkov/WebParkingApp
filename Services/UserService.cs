@@ -21,6 +21,11 @@ namespace WebParkingApp.Services
             return _context.Users.FirstOrDefault(u => u.Username == username);
         }
 
+        public UserModel GetUser(int id)
+        {
+            return _context.Users.FirstOrDefault(u => u.Id == id);
+        }
+
         public UserModel Login(string username, string password)
         {
             return _context.Users.FirstOrDefault(u => u.Username == username && u.Password == password);
