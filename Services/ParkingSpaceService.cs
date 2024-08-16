@@ -15,6 +15,11 @@ namespace WebParkingApp.Services
             return _context.ParkingSpaces.FirstOrDefault(s => s.Id == id);
         }
 
+        public double GetParkingSpacePrice(int id)
+        {
+            return _context.ParkingSpaces.FirstOrDefault(s => s.Id == id).Price;
+        }
+
         public List<ParkingSpaceModel> GetParkingSpaces() 
         {
             return _context.ParkingSpaces.ToList();
@@ -50,6 +55,10 @@ namespace WebParkingApp.Services
 
         public List<ParkingSpaceModel> GetAvailableSpaces(DateTime sDate, DateTime eDate)
         {
+            if (sDate < DateTime.Now || eDate < DateTime.Now)
+            {
+                return null;
+            }
             List<ParkingSpaceModel> availableSpaces = GetParkingSpaces();
 
             foreach (var reservation in _context.Reservations)

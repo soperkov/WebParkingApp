@@ -1,3 +1,4 @@
+using BlazorBootstrap;
 using Microsoft.EntityFrameworkCore;
 using WebParkingApp.Components;
 using WebParkingApp.Models;
@@ -22,7 +23,7 @@ namespace WebParkingApp
 
             builder.Services.AddScoped<ParkingSpaceService>();
 
-            builder.Services.AddSingleton<LoggedInUserModel>();
+            builder.Services.AddSingleton<ModalService>();
 
             builder.Services.AddBlazorBootstrap();
 

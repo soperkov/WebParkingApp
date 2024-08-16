@@ -111,6 +111,15 @@
         <label>@LoggedInUser.User.PlateNumber</label>
     </div>
 </header>
+@* <Modal @ref="modal" Title="Rezervacija za mjesto @">
+    <BodyTemplate>
+        
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button onclick="ReserveParkingSpace">Potvrdi</Button>
+    </FooterTemplate>
+</Modal> *@
+<Modal />
 <div class="body">
     <div class="form">
         <EditForm EditContext="@editContext" OnValidSubmit="HandleValidSubmit" novalidate>
@@ -151,10 +160,11 @@
             <div class="row">
                 <div class="col-md-12 text-right">
                     <Button Type="ButtonType.Button" Color="ButtonColor.Secondary" Class="float-end" @onclick="ResetForm">Poništi</Button>
-                    <Button Type="ButtonType.Submit" Color="ButtonColor.Success" Class="float-end me-2" @onclick="HandleValidSubmit">Pretraži</Button>
+                    <Button Type="ButtonType.Submit" Color="ButtonColor.Success" Class="float-end me-2">Pretraži</Button>
                 </div>
             </div>
         </EditForm>
+
     </div>
     <div class="zones">
         <div class="zone_1">
@@ -179,6 +189,7 @@
 </div>
 
 @code {
+    [Inject] private ModalService ModalService { get; set; } = default!;
     [Inject] private NavigationManager NavManager { get; set; }
     [Inject] private LoggedInUserModel LoggedInUser { get; set; }
     [Inject] private UserService UserService { get; set; }
@@ -189,6 +200,7 @@
     private RenderFragment zone2Buttons;
     private RenderFragment zone3Buttons;
     private EditContext? editContext;
+    private Modal modal = default!;
 
     protected override void OnInitialized()
     {
@@ -205,11 +217,19 @@
 
         var availableSpaces = ParkingSpaceService.GetAvailableSpaces(startDate, endDate);
 
-        PopulateZones(availableSpaces);
+        if (availableSpaces == null)
+        {
+            ShowErrorModal(ModalType.Danger);
+        }
+        else
+        {
+            PopulateZones(availableSpaces, startDate, endDate);
+        }
+
         StateHasChanged();
     }
 
-    private void PopulateZones(List<ParkingSpaceModel> models)
+    private void PopulateZones(List<ParkingSpaceModel> models, DateTime sDate, DateTime eDate)
     {
         zone1Buttons = builder =>
         {
@@ -219,7 +239,9 @@
                 if (model.ParkingName == "1")
                 {
                     builder.OpenElement(seq++, "button");
-                    builder.AddContent(seq++, model.Id);
+                    // builder.AddAttribute(seq++, "class", "btn button_zone");
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, async () => await ShowModal(ModalType.Info, model.Id, sDate, eDate)));
+                    builder.AddContent(seq++, model.Id.ToString());
                     builder.CloseElement();
                 }
             }
@@ -233,7 +255,9 @@
                 if (model.ParkingName == "2")
                 {
                     builder.OpenElement(seq++, "button");
-                    builder.AddContent(seq++, model.Id);
+                    //builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => OnShowModalClick()));
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ShowModal(ModalType.Info, model.Id, sDate, eDate)));
+                    builder.AddContent(seq++, model.Id.ToString());
                     builder.CloseElement();
                 }
             }
@@ -247,7 +271,8 @@
                 if (model.ParkingName == "3")
                 {
                     builder.OpenElement(seq++, "button");
-                    builder.AddContent(seq++, model.Id);
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ShowModal(ModalType.Info, model.Id, sDate, eDate)));
+                    builder.AddContent(seq++, model.Id.ToString());
                     builder.CloseElement();
                 }
             }
@@ -269,6 +294,50 @@
     private DateTime DateAndTimeToDateTime (DateOnly date, TimeOnly time)
     {
         return new DateTime(date, time);
+    }
+
+    // private async Task OnShowModalClick(int id, DateTime sDate, DateTime eDate)
+    // {
+    //     await modal?.ShowAsync();
+    // }
+
+
+    private async Task ShowModal(ModalType modal, int id, DateTime sDate, DateTime eDate)
+    {
+        var hours = (eDate - sDate).TotalHours;
+        var modalOption = new ModalOption
+            {
+                Title = $"Rezervacija za mjesto {id}",
+                Message = $"Označili ste {id} parkirno mjesto u periodu od {sDate.ToShortDateString} {sDate.ToShortTimeString} do {eDate.ToShortDateString} {eDate.ToShortTimeString}.\n" +
+                $"Rezervacija tog parkirnog mjesta u trajanju od {hours} sati." +
+                $"Cijena: {ParkingSpaceService.GetParkingSpacePrice(id) * hours}€.",
+                Type = modal,
+                FooterButtonText = "Potvrdi",
+                IsVerticallyCentered = true,
+
+                // Title = "Rezervacija za mjesto {id}",
+                // Message = "Označili ste {id} parkirno mjesto u periodu od {sDate.ToShortDateString} {sDate.ToShortTimeString} do {eDate.ToShortDateString} {eDate.ToShortTimeString}.\n" +
+                //     "Rezervacija tog parkirnog mjesta u trajanju od {hours} sati." +
+                //     "Cijena: {ParkingSpaceService.GetParkingSpacePrice(id) * hours}€.",
+                // Type = modal,
+                // FooterButtonText = "Potvrdi",
+                // IsVerticallyCentered = true,
+            };
+        await ModalService.ShowAsync(modalOption);
+    }
+
+    private async Task ShowErrorModal(ModalType type)
+    {
+        var modalOption = new ModalOption
+            {
+                Title = "Greška",
+                Message = " Nema slobodnih mjesta u tom razdoblju." +
+                "Označite drugi period.",
+                Type = type,
+                FooterButtonText = "Zatvori",
+                IsVerticallyCentered = true,
+            };
+        await ModalService.ShowAsync(modalOption);
     }
 
 }
