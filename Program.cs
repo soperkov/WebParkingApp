@@ -23,7 +23,7 @@ namespace WebParkingApp
 
             builder.Services.AddScoped<ParkingSpaceService>();
 
-            builder.Services.AddSingleton<ModalService>();
+            builder.Services.AddSingleton<LoggedInUserModel>();
 
             builder.Services.AddBlazorBootstrap();
 

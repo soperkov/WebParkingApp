@@ -119,7 +119,7 @@
         <Button onclick="ReserveParkingSpace">Potvrdi</Button>
     </FooterTemplate>
 </Modal> *@
-<Modal />
+<Modal IsServiceModal = "true"/>
 <div class="body">
     <div class="form">
         <EditForm EditContext="@editContext" OnValidSubmit="HandleValidSubmit" novalidate>
@@ -208,7 +208,7 @@
         base.OnInitialized();
     }
 
-    public void HandleValidSubmit()
+    public async Task HandleValidSubmit()
     {
         var startDate = DateAndTimeToDateTime((DateOnly)reservationForm.StartDate,
         (TimeOnly)reservationForm.StartTime);
@@ -219,7 +219,7 @@
 
         if (availableSpaces == null)
         {
-            ShowErrorModal(ModalType.Danger);
+            await ShowErrorModal(ModalType.Danger);
         }
         else
         {
@@ -240,7 +240,7 @@
                 {
                     builder.OpenElement(seq++, "button");
                     // builder.AddAttribute(seq++, "class", "btn button_zone");
-                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, async () => await ShowModal(ModalType.Info, model.Id, sDate, eDate)));
+                    builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ShowModal(ModalType.Info, model.Id, sDate, eDate)));
                     builder.AddContent(seq++, model.Id.ToString());
                     builder.CloseElement();
                 }
@@ -304,24 +304,17 @@
 
     private async Task ShowModal(ModalType modal, int id, DateTime sDate, DateTime eDate)
     {
-        var hours = (eDate - sDate).TotalHours;
+        var hours = Math.Ceiling(Math.Round((eDate - sDate).TotalHours,2));
+        var totalPrice = hours * ParkingSpaceService.GetParkingSpacePrice(id);
         var modalOption = new ModalOption
             {
                 Title = $"Rezervacija za mjesto {id}",
-                Message = $"Označili ste {id} parkirno mjesto u periodu od {sDate.ToShortDateString} {sDate.ToShortTimeString} do {eDate.ToShortDateString} {eDate.ToShortTimeString}.\n" +
-                $"Rezervacija tog parkirnog mjesta u trajanju od {hours} sati." +
-                $"Cijena: {ParkingSpaceService.GetParkingSpacePrice(id) * hours}€.",
+                Message = $"Označili ste parkirno mjesto {id} u periodu od {sDate.ToString("dd.MM.yyyy HH:mm")} do {eDate.ToString("dd.MM.yyyy HH:mm")}.\n" +
+                $"Rezervacija tog parkirnog mjesta u trajanju od {hours} sati. " +
+                $"Cijena: {totalPrice}€.",
                 Type = modal,
                 FooterButtonText = "Potvrdi",
                 IsVerticallyCentered = true,
-
-                // Title = "Rezervacija za mjesto {id}",
-                // Message = "Označili ste {id} parkirno mjesto u periodu od {sDate.ToShortDateString} {sDate.ToShortTimeString} do {eDate.ToShortDateString} {eDate.ToShortTimeString}.\n" +
-                //     "Rezervacija tog parkirnog mjesta u trajanju od {hours} sati." +
-                //     "Cijena: {ParkingSpaceService.GetParkingSpacePrice(id) * hours}€.",
-                // Type = modal,
-                // FooterButtonText = "Potvrdi",
-                // IsVerticallyCentered = true,
             };
         await ModalService.ShowAsync(modalOption);
     }
@@ -332,7 +325,7 @@
             {
                 Title = "Greška",
                 Message = " Nema slobodnih mjesta u tom razdoblju." +
-                "Označite drugi period.",
+                " Označite drugi period.",
                 Type = type,
                 FooterButtonText = "Zatvori",
                 IsVerticallyCentered = true,
