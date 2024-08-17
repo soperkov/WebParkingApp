@@ -25,10 +25,22 @@ namespace WebParkingApp.Services
             return _context.ParkingSpaces.ToList();
         }
 
-        public void ReserveParkingSpace(ReservationModel reservation)
+        public async Task<bool> ReserveParkingSpaceAsync(ReservationModel reservation)
         {
+            var existingReservation = _context.Reservations
+                .Where(r => r.UserId == reservation.UserId)
+                .Where(r => r.StartDate <= reservation.EndDate && r.EndDate >= reservation.StartDate)
+                .FirstOrDefault();
+
+            if (existingReservation != null)
+            {
+                return false;
+            }
+
             _context.Reservations.Add(reservation);
-            _context.SaveChanges();
+            await _context.SaveChangesAsync();
+
+            return true;
         }
 
         public List<ReservationModel> GetReservations(int userId)
