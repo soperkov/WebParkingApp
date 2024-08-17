@@ -93,6 +93,8 @@
         padding: 10px 20px;
         border-radius: 5px;
         cursor: pointer;
+        height: 30px;
+        width: 60px;
     }
 
 
@@ -124,7 +126,14 @@
 
 <Modal @ref="modal" IsServiceModal="true">
     <FooterTemplate>
-        <button class="btn-btn success" onclick=@CurrentModalOptions.OnFooterButtonClick/>
+        @if (CurrentModalOptions.Type == ModalType.Info)
+        {
+            <Button onclick=@CurrentModalOptions.OnFooterButtonClick>Potvrdi</Button>
+        }
+        else
+        {
+            <Button onclick=@CurrentModalOptions.OnFooterButtonClick>Zatvori</Button>
+        }
     </FooterTemplate>
 </Modal>
 
@@ -331,7 +340,7 @@
                 $"Cijena: {totalPrice}€.",
                 Type = modal,
                 FooterButtonText = "Potvrdi",
-                OnFooterButtonClick = EventCallback.Factory.Create(this, async () => await TestMethod(reservation)),
+                OnFooterButtonClick = EventCallback.Factory.Create(this, async () => await CallSuccessModal(reservation)),
 
                 IsVerticallyCentered = true,
             };
@@ -341,7 +350,7 @@
 
     private async Task ShowErrorModal(ModalType type)
     {
-        var modalOption = new ModalOptions
+        CurrentModalOptions = new ModalOptions
             {
                 Title = "Greška",
                 Message = " Nema slobodnih mjesta u tom razdoblju ili već imate rezervaciju." +
@@ -351,7 +360,21 @@
                 OnFooterButtonClick = EventCallback.Factory.Create(this, async () => await OnHideModalClick()),
                 IsVerticallyCentered = true
             };
-        await ModalService.ShowAsync(modalOption);
+        await ModalService.ShowAsync(CurrentModalOptions);
+    }
+
+    private async Task ShowSuccessModal (ModalType modal)
+    {
+        CurrentModalOptions = new ModalOptions
+            {
+                Title = "Potvrda",
+                Message = "Čestitamo! Uspješno ste rezervirali parkirno mjesto.",
+                Type = modal,
+                FooterButtonText = "Zatvori",
+                OnFooterButtonClick = EventCallback.Factory.Create(this, async () => await HideAndReset()),
+                IsVerticallyCentered = true,
+            };
+        await ModalService.ShowAsync(CurrentModalOptions);
     }
 
     public class ModalOptions : ModalOption
@@ -367,15 +390,20 @@
         public string FooterButtonText { get; set; }
     }
 
-    public async Task TestMethod(ReservationModel reservation)
+    public async Task HideAndReset()
+    {
+        await OnHideModalClick();
+        ResetForm();
+    }
+
+    public async Task CallSuccessModal(ReservationModel reservation)
     {
         var success = await ParkingSpaceService.ReserveParkingSpaceAsync(reservation);
 
         if (success)
         {
-            await OnHideModalClick();
+            await ShowSuccessModal(ModalType.Success);
             await HandleValidSubmit();
-            ResetForm();
         }
         else
         {
