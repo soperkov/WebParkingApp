@@ -25,26 +25,10 @@ namespace WebParkingApp.Services
             return _context.ParkingSpaces.ToList();
         }
 
-        public bool ReserveParkingSpace(ReservationModel reservation)
+        public void ReserveParkingSpace(ReservationModel reservation)
         {
-            var parkingSpaces = _context.Reservations
-                .Where(s => s.ParkingId == reservation.ParkingId).ToList();
-            bool canReserve = true;
-            foreach (var parkingSpace in parkingSpaces)
-            {
-                if (reservation.StartDate < parkingSpace.EndDate && 
-                    reservation.EndDate > parkingSpace.StartDate ||
-                    reservation.StartDate < DateTime.Now)
-                {
-                    canReserve = false;
-                }
-            }
-            if (canReserve) {
-                _context.Reservations.Add(reservation);
-                _context.SaveChanges();
-                return true;
-            }
-            return false;
+            _context.Reservations.Add(reservation);
+            _context.SaveChanges();
         }
 
         public List<ReservationModel> GetReservations(int userId)

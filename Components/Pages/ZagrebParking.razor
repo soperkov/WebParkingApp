@@ -111,15 +111,13 @@
         <label>@LoggedInUser.User.PlateNumber</label>
     </div>
 </header>
-@* <Modal @ref="modal" Title="Rezervacija za mjesto @">
-    <BodyTemplate>
-        
-    </BodyTemplate>
+
+<Modal @ref="modal" IsServiceModal="true">
     <FooterTemplate>
-        <Button onclick="ReserveParkingSpace">Potvrdi</Button>
+        <button class="btn-btn success" onclick=@CurrentModalOptions.OnFooterButtonClick/>
     </FooterTemplate>
-</Modal> *@
-<Modal IsServiceModal = "true"/>
+</Modal>
+
 <div class="body">
     <div class="form">
         <EditForm EditContext="@editContext" OnValidSubmit="HandleValidSubmit" novalidate>
@@ -202,6 +200,9 @@
     private EditContext? editContext;
     private Modal modal = default!;
 
+    private ModalOptions CurrentModalOptions { get; set; }
+
+
     protected override void OnInitialized()
     {
         editContext = new EditContext(reservationForm);
@@ -239,7 +240,7 @@
                 if (model.ParkingName == "1")
                 {
                     builder.OpenElement(seq++, "button");
-                    // builder.AddAttribute(seq++, "class", "btn button_zone");
+                    builder.AddAttribute(seq++, "class", "btn button_zone");
                     builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ShowModal(ModalType.Info, model.Id, sDate, eDate)));
                     builder.AddContent(seq++, model.Id.ToString());
                     builder.CloseElement();
@@ -255,7 +256,7 @@
                 if (model.ParkingName == "2")
                 {
                     builder.OpenElement(seq++, "button");
-                    //builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => OnShowModalClick()));
+                    builder.AddAttribute(seq++, "class", "btn button_zone");
                     builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ShowModal(ModalType.Info, model.Id, sDate, eDate)));
                     builder.AddContent(seq++, model.Id.ToString());
                     builder.CloseElement();
@@ -271,6 +272,7 @@
                 if (model.ParkingName == "3")
                 {
                     builder.OpenElement(seq++, "button");
+                    builder.AddAttribute(seq++, "class", "btn button_zone");
                     builder.AddAttribute(seq++, "onclick", EventCallback.Factory.Create(this, () => ShowModal(ModalType.Info, model.Id, sDate, eDate)));
                     builder.AddContent(seq++, model.Id.ToString());
                     builder.CloseElement();
@@ -278,7 +280,6 @@
             }
         };
 
-        // Trigger re-render
         StateHasChanged();
     }
 
@@ -291,22 +292,28 @@
         zone3Buttons = null;
     }
 
+    private async Task OnHideModalClick()
+    {
+        await modal?.HideAsync();
+    }
+
     private DateTime DateAndTimeToDateTime (DateOnly date, TimeOnly time)
     {
         return new DateTime(date, time);
     }
 
-    // private async Task OnShowModalClick(int id, DateTime sDate, DateTime eDate)
-    // {
-    //     await modal?.ShowAsync();
-    // }
-
-
     private async Task ShowModal(ModalType modal, int id, DateTime sDate, DateTime eDate)
     {
         var hours = Math.Ceiling(Math.Round((eDate - sDate).TotalHours,2));
-        var totalPrice = hours * ParkingSpaceService.GetParkingSpacePrice(id);
-        var modalOption = new ModalOption
+        var totalPrice = Math.Round(hours * ParkingSpaceService.GetParkingSpacePrice(id),2);
+        var reservation = new ReservationModel
+            {
+                UserId = LoggedInUser.Id,
+                ParkingId = id,
+                StartDate = sDate,
+                EndDate = eDate
+            };
+        CurrentModalOptions = new ModalOptions
             {
                 Title = $"Rezervacija za mjesto {id}",
                 Message = $"Označili ste parkirno mjesto {id} u periodu od {sDate.ToString("dd.MM.yyyy HH:mm")} do {eDate.ToString("dd.MM.yyyy HH:mm")}.\n" +
@@ -314,23 +321,46 @@
                 $"Cijena: {totalPrice}€.",
                 Type = modal,
                 FooterButtonText = "Potvrdi",
+                OnFooterButtonClick = EventCallback.Factory.Create(this, async () => await TestMethod(reservation)),
+
                 IsVerticallyCentered = true,
             };
-        await ModalService.ShowAsync(modalOption);
+
+        await ModalService.ShowAsync(CurrentModalOptions);
     }
 
     private async Task ShowErrorModal(ModalType type)
     {
-        var modalOption = new ModalOption
+        var modalOption = new ModalOptions
             {
                 Title = "Greška",
                 Message = " Nema slobodnih mjesta u tom razdoblju." +
                 " Označite drugi period.",
                 Type = type,
                 FooterButtonText = "Zatvori",
-                IsVerticallyCentered = true,
+                IsVerticallyCentered = true
             };
         await ModalService.ShowAsync(modalOption);
     }
 
+    public class ModalOptions : ModalOption
+    {
+        public EventCallback OnFooterButtonClick { get; set; }
+    }
+
+    public class MessageModel
+    {
+        public string Title { get; set; }
+        public string Message { get; set; }
+        public ModalType Type { get; set; }
+        public string FooterButtonText { get; set; }
+    }
+
+    public async Task TestMethod(ReservationModel reservation)
+    {
+        ParkingSpaceService.ReserveParkingSpace(reservation);
+        await OnHideModalClick();
+        await HandleValidSubmit();
+        ResetForm();
+    }
 }
