@@ -112,6 +112,15 @@
         border-color: white;
     }
 
+    .modal-button-btn {
+        background-color: rgb(150, 150, 150);
+        border-color: 1 px solid black;
+        color: black;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
 </style>
 
 <header>
@@ -121,6 +130,7 @@
     <div class="user_info">
         <label>@LoggedInUser.User.Username</label>
         <label>@LoggedInUser.User.PlateNumber</label>
+        <button type="button" class="modal-button-btn" onclick=@Logout>Odjava</button>
     </div>
 </header>
 
@@ -128,11 +138,11 @@
     <FooterTemplate>
         @if (CurrentModalOptions.Type == ModalType.Info)
         {
-            <Button onclick=@CurrentModalOptions.OnFooterButtonClick>Potvrdi</Button>
+            <Button onclick=@CurrentModalOptions.OnFooterButtonClick class="modal-button-btn">Potvrdi</Button>
         }
         else
         {
-            <Button onclick=@CurrentModalOptions.OnFooterButtonClick>Zatvori</Button>
+            <Button onclick=@CurrentModalOptions.OnFooterButtonClick class="modal-button-btn">Zatvori</Button>
         }
     </FooterTemplate>
 </Modal>
@@ -177,11 +187,10 @@
             <div class="row">
                 <div class="col-md-12 text-right">
                     <Button Type="ButtonType.Button" Color="ButtonColor.Secondary" Class="float-end" @onclick="ResetForm">Poništi</Button>
-                    <Button Type="ButtonType.Submit" Color="ButtonColor.Success" Class="float-end me-2">Pretraži</Button>
+                    <Button Type="ButtonType.Submit" Color="ButtonColor.Success" Class="float-end me-2 visibility">Pretraži</Button>
                 </div>
             </div>
         </EditForm>
-
     </div>
     <div class="zones">
         <div class="zone_1">
@@ -233,7 +242,7 @@
         var startDate = DateAndTimeToDateTime((DateOnly)reservationForm.StartDate,
         (TimeOnly)reservationForm.StartTime);
         var endDate = DateAndTimeToDateTime((DateOnly)reservationForm.EndDate, 
-        (TimeOnly)reservationForm.EndTime);
+        (TimeOnly)reservationForm.EndTime);        
 
         var availableSpaces = ParkingSpaceService.GetAvailableSpaces(startDate, endDate);
 
@@ -410,5 +419,12 @@
             await ShowErrorModal(ModalType.Danger);
         }
         StateHasChanged();
+    }
+
+    public void Logout()
+    {
+        NavManager.NavigateTo("/");
+        // LoggedInUser.Reset();
+        LoggedInUser.Clear();
     }
 }

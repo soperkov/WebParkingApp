@@ -11,5 +11,11 @@
             Id = 0;
             User = null;
         }
+
+        public void Clear()
+        {
+            Id = 0;
+            User = new UserModel();
+        }
     }
 }
